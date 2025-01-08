@@ -1,0 +1,140 @@
+# Prometheus Configuration v2.45.0
+# Comprehensive monitoring configuration for Tax Optimizer platform
+
+global:
+  scrape_interval: 10s     # Default data collection interval
+  evaluation_interval: 10s # Default alert rule evaluation interval
+  scrape_timeout: 8s      # Default scrape timeout
+  external_labels:
+    environment: production
+    application: tax-optimizer
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+          labels:
+            environment: production
+            service: tax-optimizer
+      timeout: 5s
+      scheme: http
+
+# Rule files containing alert definitions and recording rules
+rule_files:
+  - "rules/node.rules.yml"     # Node-level system metrics
+  - "rules/app.rules.yml"      # Application-specific metrics
+  - "rules/security.rules.yml" # Security-related alerts
+  - "rules/scaling.rules.yml"  # Scaling and performance alerts
+  - "rules/database.rules.yml" # Database performance metrics
+
+# Scrape configurations
+scrape_configs:
+  # Backend API monitoring
+  - job_name: 'tax-optimizer-backend'
+    metrics_path: '/metrics'
+    scheme: http
+    scrape_interval: 5s
+    scrape_timeout: 4s
+    static_configs:
+      - targets: ['backend:3000']
+        labels:
+          service: backend
+          component: api
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'http_request_duration_seconds.*|http_requests_total.*|api_error_rate.*|active_users.*|concurrent_sessions.*|request_rate_per_second.*|memory_usage_bytes.*|cpu_usage_percent.*'
+        action: keep
+
+  # Frontend application monitoring
+  - job_name: 'tax-optimizer-web'
+    metrics_path: '/metrics'
+    scheme: http
+    scrape_interval: 10s
+    scrape_timeout: 8s
+    static_configs:
+      - targets: ['web:3000']
+        labels:
+          service: frontend
+          component: web
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'page_load_time.*|client_errors.*|user_interactions.*|frontend_memory_usage.*|js_heap_size.*|dom_nodes_count.*'
+        action: keep
+
+  # Security monitoring
+  - job_name: 'security-metrics'
+    metrics_path: '/security-metrics'
+    scheme: http
+    scrape_interval: 5s
+    scrape_timeout: 4s
+    static_configs:
+      - targets: ['security-monitor:9100']
+        labels:
+          service: security
+          component: monitoring
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'failed_login_attempts.*|suspicious_activities.*|jwt_validation_errors.*|rate_limit_exceeded.*|auth_failures.*'
+        action: keep
+
+  # Node exporter for system metrics
+  - job_name: 'node'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: infrastructure
+          component: system
+
+  # Database metrics
+  - job_name: 'database'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['db-exporter:9187']
+        labels:
+          service: database
+          component: postgres
+
+  # Cache monitoring
+  - job_name: 'redis'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: cache
+          component: redis
+
+# Remote write configuration for long-term storage
+remote_write:
+  - url: "http://remote-storage:9201/write"
+    remote_timeout: 30s
+    queue_config:
+      capacity: 10000
+      max_shards: 200
+      max_samples_per_send: 500
+      batch_send_deadline: 5s
+    write_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'up|node.*|http_.*|api_.*|security_.*'
+        action: keep
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 15d
+    retention.size: 50GB
+    wal:
+      retention.time: 12h
+
+# Exemplar storage
+exemplar:
+  storage:
+    max_exemplars: 100000
+
+# Tracing configuration
+tracing:
+  endpoint: "tempo:4317"
+  sampling_fraction: 0.1
+  insecure: true
