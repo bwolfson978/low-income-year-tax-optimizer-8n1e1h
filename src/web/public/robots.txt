@@ -1,0 +1,20 @@
+# Last Updated: Generated on deployment
+# Purpose: Control search engine access while protecting sensitive routes
+
+# Default rules for all crawlers
+User-agent: *
+Allow: /
+Allow: /auth/login
+Allow: /auth/signup
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /auth/reset-password/
+Disallow: /auth/verify/
+Crawl-delay: 10
+
+# Block OpenAI's crawler to prevent AI training
+User-agent: GPTBot
+Disallow: /
+
+# Reference to sitemap for improved crawling efficiency
+Sitemap: https://domain.com/sitemap.xml
