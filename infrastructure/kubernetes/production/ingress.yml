@@ -1,0 +1,62 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tax-optimizer-ingress
+  namespace: production
+  labels:
+    app: tax-optimizer
+    environment: production
+    component: ingress
+  annotations:
+    # Ingress class and SSL configuration
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+    # Request size and timeout configurations
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+
+    # CORS configuration
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://tax-optimizer.example.com"
+
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+
+    # Monitoring configuration
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "10254"
+
+spec:
+  tls:
+    - hosts:
+        - tax-optimizer.example.com
+      secretName: tax-optimizer-tls
+  rules:
+    - host: tax-optimizer.example.com
+      http:
+        paths:
+          # API traffic routing
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: tax-optimizer-backend
+                port:
+                  number: 80
+          # Web traffic routing
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tax-optimizer-web
+                port:
+                  number: 80
