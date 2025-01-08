@@ -1,0 +1,70 @@
+// PostgreSQL v15+ database provider configuration
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  directUrl         = env("DIRECT_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+// Prisma Client generator configuration v5.0+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "postgresqlExtensions"]
+}
+
+// User model representing application users with preferences and scenarios
+model User {
+  id          String     @id @default(uuid()) @db.Uuid
+  email       String     @unique
+  name        String
+  preferences Json       @default("{}")
+  created_at  DateTime   @default(now())
+  scenarios   Scenario[]
+
+  // Optimized index for email lookups
+  @@index([email], name: "email_idx")
+}
+
+// Scenario model representing tax optimization scenarios
+model Scenario {
+  id               String   @id @default(uuid()) @db.Uuid
+  user_id          String   @db.Uuid
+  trad_ira_balance Decimal  @db.Decimal(10,2)
+  roth_ira_balance Decimal  @db.Decimal(10,2)
+  capital_gains    Decimal  @db.Decimal(10,2)
+  tax_state        String
+  created_at       DateTime @default(now())
+  user             User     @relation(fields: [user_id], references: [id])
+  calculations     Calculation[]
+
+  // Composite index for efficient user scenario queries
+  @@index([user_id, created_at], name: "user_id_created_at_idx")
+}
+
+// Calculation model representing optimization results
+model Calculation {
+  id                String        @id @default(uuid()) @db.Uuid
+  scenario_id       String        @db.Uuid
+  conversion_amount Decimal       @db.Decimal(10,2)
+  gains_realization Decimal       @db.Decimal(10,2)
+  results          Json
+  calculated_at     DateTime      @default(now())
+  scenario          Scenario      @relation(fields: [scenario_id], references: [id])
+  explanations      Explanation[]
+
+  // Composite index for efficient scenario calculation queries
+  @@index([scenario_id, calculated_at], name: "scenario_id_calculated_at_idx")
+}
+
+// Explanation model representing AI-generated explanations
+model Explanation {
+  id             String      @id @default(uuid()) @db.Uuid
+  calculation_id String      @db.Uuid
+  explanation    String      @db.Text
+  context        Json
+  created_at     DateTime    @default(now())
+  calculation    Calculation @relation(fields: [calculation_id], references: [id])
+
+  // Composite index for efficient calculation explanation queries
+  @@index([calculation_id, created_at], name: "calculation_id_created_at_idx")
+}
