@@ -1,0 +1,34 @@
+Format: ICO (Windows Icon)
+File size: ~4-8 KB (compressed)
+
+Dimensions included:
+- 16x16 pixels (standard favicon)
+- 32x32 pixels (high DPI)
+- 48x48 pixels (Windows pinned sites)
+
+Color specifications:
+Light mode:
+- Primary: #4F46E5 (Indigo)
+- Background: #FFFFFF (White)
+
+Dark mode:
+- Primary: #818CF8 (Light Indigo)
+- Background: #020817 (Dark Blue)
+
+Technical requirements:
+- 32-bit color depth with alpha channel
+- PNG compression for each size
+- Transparency support
+- Multiple resolution variants in single file
+
+Design elements:
+- Simplified "T" letterform (for Tax)
+- Dollar sign overlay
+- Clean geometric shapes
+- Maintains legibility at 16x16
+
+The ICO file should be created using professional icon creation software or image editing tools that support ICO format with multiple resolutions.
+
+HTTP Headers when served:
+Cache-Control: public, max-age=31536000, immutable
+Content-Type: image/x-icon
