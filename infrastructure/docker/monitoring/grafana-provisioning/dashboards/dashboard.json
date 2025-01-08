@@ -1,0 +1,270 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "tax-optimizer-main",
+    "title": "Tax Optimizer Platform Dashboard",
+    "tags": ["tax-optimizer", "production", "monitoring"],
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "version": 1,
+    "refresh": "10s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ],
+      "time_options": [
+        "5m",
+        "15m",
+        "1h",
+        "6h",
+        "12h",
+        "24h",
+        "2d",
+        "7d",
+        "30d"
+      ]
+    },
+    "panels": [
+      {
+        "title": "API Performance",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(http_request_duration_seconds_sum[5m])",
+            "legendFormat": "Request Duration"
+          },
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "Request Rate"
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 0.5,
+            "colorMode": "warning",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration"
+          },
+          {
+            "format": "short",
+            "label": "Requests/sec"
+          }
+        ],
+        "tooltip": {
+          "shared": true,
+          "sort": 2,
+          "value_type": "individual"
+        }
+      },
+      {
+        "title": "Concurrent Users",
+        "type": "gauge",
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(active_users)",
+            "legendFormat": "Active Users"
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 800,
+            "colorMode": "warning"
+          },
+          {
+            "value": 1000,
+            "colorMode": "critical"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "max": 1200,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 800
+                },
+                {
+                  "color": "red",
+                  "value": 1000
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Security Events",
+        "type": "table",
+        "gridPos": {
+          "x": 18,
+          "y": 0,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "security_events_total",
+            "legendFormat": "Security Events"
+          }
+        ],
+        "columns": [
+          {
+            "text": "Time",
+            "type": "time"
+          },
+          {
+            "text": "Event Type",
+            "type": "string"
+          },
+          {
+            "text": "Severity",
+            "type": "string"
+          }
+        ],
+        "styles": [
+          {
+            "pattern": "Time",
+            "type": "date",
+            "dateFormat": "YYYY-MM-DD HH:mm:ss"
+          },
+          {
+            "pattern": "Severity",
+            "type": "string",
+            "mappings": [
+              {
+                "value": "critical",
+                "color": "red"
+              },
+              {
+                "value": "warning",
+                "color": "yellow"
+              },
+              {
+                "value": "info",
+                "color": "green"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "API Request Rate by Endpoint",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{handler=~\"/api/.*\"}[5m])) by (handler)",
+            "legendFormat": "{{handler}}"
+          }
+        ]
+      },
+      {
+        "title": "Error Rate",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..|4..\"}[5m])) by (status)",
+            "legendFormat": "HTTP {{status}}"
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "environment",
+          "type": "custom",
+          "query": "production,staging,development",
+          "current": {
+            "value": "production",
+            "text": "production"
+          }
+        },
+        {
+          "name": "datacenter",
+          "type": "custom",
+          "query": "us-east,us-west,eu-central",
+          "current": {
+            "value": "us-east",
+            "text": "us-east"
+          }
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Deployments",
+          "datasource": "Prometheus",
+          "expr": "changes(version_info[1m]) > 0",
+          "iconColor": "#5794F2",
+          "enable": true
+        },
+        {
+          "name": "Incidents",
+          "datasource": "Prometheus",
+          "expr": "incident_created > 0",
+          "iconColor": "#E02F44",
+          "enable": true
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "Tax Optimizer Documentation",
+        "url": "/docs",
+        "icon": "doc"
+      }
+    ]
+  }
+}
