@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run CodeQL Analysis
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: javascript, typescript
 
