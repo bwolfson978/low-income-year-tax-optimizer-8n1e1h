@@ -1,0 +1,92 @@
+**/node_modules
+
+# Environment and security files
+**/.env*
+**/*.key
+**/*.pem
+**/*.cert
+**/.ssh
+
+# Version control
+.git
+**/.gitignore
+
+# Test files and directories
+**/tests
+**/__tests__
+**/*.test.*
+**/*.spec.*
+**/coverage
+
+# IDE configurations
+**/.vscode
+**/.idea
+
+# Infrastructure and configuration
+**/infrastructure
+**/*.config.js
+**/Dockerfile*
+**/docker-compose*
+.dockerignore
+
+# Documentation
+**/*.md
+
+# Development artifacts
+**/.prettierrc*
+**/.eslintrc*
+
+# System files
+**/.DS_Store
+**/Thumbs.db
+**/*.swp
+**/*._*
+
+# Log files
+**/*.log
+
+# Build artifacts
+**/dist
+**/build
+**/.next
+**/.vercel
+**/out
+
+# Cache directories
+**/.cache
+**/.npm
+**/.pnpm-store
+**/.yarn
+
+# Temporary files
+**/tmp
+**/temp
+**/*.tmp
+**/*.temp
+
+# Debug files
+**/*.debug
+**/*.dump
+
+# Package manager files
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# Storybook files
+**/*.stories.*
+**/.storybook
+
+# Backup files
+**/*~
+**/*.bak
+**/*.backup
+
+# Local development files
+**/local.*
+**/*.local.*
+
+# Misc development files
+**/*.tsbuildinfo
+**/*.eslintcache
+**/*.stylelintcache
