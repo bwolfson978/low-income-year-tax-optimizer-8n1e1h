@@ -1,0 +1,25 @@
+*                                    @project-leads
+
+# Backend service ownership
+/src/backend/**                      @backend-team
+
+# Web application ownership
+/src/web/**                          @frontend-team
+
+# Tax calculation logic requires tax expert review
+/src/backend/src/utils/tax-calculator/**    @tax-experts @backend-team
+
+# Security utilities require security team review
+/src/backend/src/utils/security/**          @security-team @backend-team
+
+# Infrastructure configuration ownership
+/infrastructure/**                   @devops-team
+
+# CI/CD workflow ownership
+/.github/workflows/**                @devops-team
+
+# Database schema changes require database team review
+/src/backend/prisma/**              @database-team @backend-team
+
+# Documentation ownership
+*.md                                @docs-team
