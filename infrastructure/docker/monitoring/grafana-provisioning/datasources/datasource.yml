@@ -1,0 +1,57 @@
+# Grafana datasource configuration v9.5.0
+# Configures Prometheus v2.45.0 as the primary data source for metrics collection
+
+apiVersion: 1
+
+# Clean up any existing Prometheus datasource to avoid conflicts
+deleteDatasources:
+  - name: Prometheus
+    orgId: 1
+
+# Configure Prometheus as the default datasource
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    orgId: 1
+    url: http://prometheus:9090
+    basicAuth: false
+    isDefault: true
+    version: 1
+    editable: false
+    # Performance optimization settings for high-scale monitoring
+    jsonData:
+      # 10-second collection interval for real-time monitoring
+      timeInterval: "10s"
+      # 30-second timeout for complex queries
+      queryTimeout: "30s"
+      # Use POST method for better handling of large queries
+      httpMethod: "POST"
+      # Enable exemplars for detailed trace analysis
+      exemplarTraceIdDestinations:
+        # Internal trace correlation
+        - name: trace_id
+          datasourceUid: prometheus
+      # Alert state history configuration
+      alertmanagerUid: alertmanager
+      # Metric caching configuration
+      cacheLevel: 'High'
+      # Disable direct DB connections for security
+      disableDirectDBAccess: true
+      # Enable HTTP compression
+      httpCompression: true
+      # Metric discovery settings
+      prometheusType: Prometheus
+      prometheusVersion: 2.45.0
+      # Query caching settings
+      queryOverlapWindow: "10s"
+      # Scrape interval alignment
+      scrapeInterval: "10s"
+    # Secure communication settings
+    secureJsonData: {}
+    # Access control settings
+    readOnly: true
+    # Built-in monitoring settings
+    editable: false
+    # Container network access
+    uid: prometheus_ds
