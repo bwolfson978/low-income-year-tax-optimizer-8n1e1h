@@ -1,0 +1,168 @@
+name: Production Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        type: string
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+env:
+  NODE_ENV: production
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  NODE_VERSION: '18.x'
+  PNPM_VERSION: '8.x'
+
+jobs:
+  security_check:
+    name: Security Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript, typescript
+
+      - name: Run dependency vulnerability scan
+        run: |
+          npm install -g @microsoft/rush
+          rush audit
+
+      - name: Validate environment secrets
+        run: |
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ] || [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "Required secrets are missing"
+            exit 1
+          fi
+
+      - name: Check SSL certificates
+        run: |
+          curl --head https://tax-optimizer.vercel.app
+
+      - name: Verify security headers
+        run: |
+          curl -I https://tax-optimizer.vercel.app | grep -i 'strict-transport-security\|content-security-policy\|x-frame-options'
+
+  validate_deployment:
+    name: Deployment Validation
+    needs: security_check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify branch protection
+        run: |
+          gh api repos/${{ github.repository }}/branches/main/protection
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate Vercel configuration
+        run: |
+          curl -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+               https://api.vercel.com/v9/projects/${{ env.VERCEL_PROJECT_ID }}
+
+      - name: Check DNS configuration
+        run: |
+          dig tax-optimizer.vercel.app
+
+      - name: Verify monitoring setup
+        run: |
+          curl -f https://tax-optimizer.vercel.app/api/health
+
+  deploy:
+    name: Production Deployment
+    needs: validate_deployment
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://tax-optimizer.vercel.app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Deploy to Vercel
+        uses: vercel/actions/deploy@v3
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ env.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ env.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+
+      - name: Run health check
+        run: |
+          for i in {1..5}; do
+            if curl -f https://tax-optimizer.vercel.app/api/health; then
+              exit 0
+            fi
+            sleep 10
+          done
+          exit 1
+
+  post_deployment:
+    name: Post-Deployment Tasks
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run integration tests
+        run: |
+          pnpm test:integration
+
+      - name: Verify API endpoints
+        run: |
+          curl -f https://tax-optimizer.vercel.app/api/v1/health
+          curl -f https://tax-optimizer.vercel.app/api/v1/scenarios
+          curl -f https://tax-optimizer.vercel.app/api/v1/calculate
+
+      - name: Check monitoring systems
+        run: |
+          curl -f https://tax-optimizer.vercel.app/api/monitoring/status
+
+      - name: Verify analytics
+        run: |
+          curl -f https://tax-optimizer.vercel.app/api/analytics/health
+
+      - name: Send deployment notification
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const message = `Production deployment ${context.job.status}
+            Environment: production
+            URL: https://tax-optimizer.vercel.app
+            Commit: ${context.sha}
+            Workflow: ${context.workflow}`
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: message
+            })
