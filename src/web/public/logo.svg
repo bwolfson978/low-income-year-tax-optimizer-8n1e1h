@@ -1,0 +1,50 @@
+<svg 
+  xmlns="http://www.w3.org/2000/svg" 
+  viewBox="0 0 24 24" 
+  preserveAspectRatio="xMidYMid meet"
+  role="img"
+  aria-label="Tax Optimizer Logo"
+  class="tax-optimizer-logo"
+>
+  <style>
+    .logo-primary {
+      fill: var(--primary);
+    }
+    .logo-secondary {
+      fill: var(--secondary);
+    }
+    .logo-background {
+      fill: var(--background);
+    }
+  </style>
+
+  <!-- Background Circle -->
+  <circle 
+    cx="12" 
+    cy="12" 
+    r="11" 
+    class="logo-background"
+  />
+
+  <!-- Dollar Sign -->
+  <path 
+    d="M12.5 6.5V5h-1v1.5c-2.5.3-4 2.2-4 3.9 0 2.3 2.3 3.2 4 3.8 1.7.6 3 1.1 3 2.3 0 1.1-1.3 1.9-2.5 1.9-1.5 0-2.7-1-2.7-2.3H8c0 2.2 2 3.9 4.5 3.9v1.5h1v-1.5c2.5-.3 4-2.2 4-3.9 0-2.3-2.3-3.2-4-3.8-1.7-.6-3-1.1-3-2.3 0-1.1 1.3-1.9 2.5-1.9 1.5 0 2.7 1 2.7 2.3h1.3c0-2.2-2-3.9-4.5-3.9z"
+    class="logo-primary"
+  />
+
+  <!-- Upward Arrow -->
+  <path 
+    d="M16.85 9.85l-3.5-3.5a.5.5 0 00-.7 0l-3.5 3.5a.5.5 0 00.7.7L12 8.4V14a.5.5 0 001 0V8.4l2.15 2.15a.5.5 0 00.7-.7z"
+    class="logo-secondary"
+  />
+
+  <!-- Circular Border -->
+  <circle 
+    cx="12" 
+    cy="12" 
+    r="11" 
+    fill="none" 
+    stroke="var(--primary)" 
+    stroke-width="1"
+  />
+</svg>
