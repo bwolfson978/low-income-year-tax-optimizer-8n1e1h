@@ -1,0 +1,107 @@
+global:
+  # Time after which an alert is declared resolved if not updated
+  resolve_timeout: 5m
+  # Slack webhook URL for notifications
+  slack_api_url: http://slack-api-url
+  # PagerDuty API URL for critical alerts
+  pagerduty_url: http://pagerduty-api-url
+
+# Root routing configuration for alerts
+route:
+  # Default notification receiver
+  receiver: default-receiver
+  # Alert grouping criteria
+  group_by: ['alertname', 'cluster', 'service']
+  # Initial delay before sending grouped alerts
+  group_wait: 30s
+  # Interval between sending updates for grouped alerts
+  group_interval: 5m
+  # Minimum time between re-sending an alert
+  repeat_interval: 4h
+
+  # Specialized routing rules
+  routes:
+    # Critical severity alerts route
+    - match:
+        severity: critical
+      receiver: pagerduty-critical
+      group_wait: 0s
+      repeat_interval: 1h
+
+    # Warning severity alerts route
+    - match:
+        severity: warning
+      receiver: slack-warnings
+      group_wait: 30s
+      repeat_interval: 4h
+
+    # Security incident alerts route
+    - match:
+        type: security_incident
+      receiver: security-team
+      group_wait: 0s
+      repeat_interval: 30m
+
+# Alert receivers configuration
+receivers:
+  # Default receiver - sends to general monitoring channel
+  - name: default-receiver
+    slack_configs:
+      - channel: '#monitoring'
+        title: '{{ .GroupLabels.alertname }}'
+        text: '{{ .CommonAnnotations.description }}'
+
+  # Critical alerts receiver - sends to PagerDuty and critical Slack channel
+  - name: pagerduty-critical
+    pagerduty_configs:
+      - service_key: PAGERDUTY_SERVICE_KEY
+        description: '{{ .CommonAnnotations.description }}'
+        severity: '{{ .CommonLabels.severity }}'
+    slack_configs:
+      - channel: '#critical-alerts'
+        title: 'CRITICAL: {{ .GroupLabels.alertname }}'
+        text: '{{ .CommonAnnotations.description }}'
+
+  # Security team receiver - sends to security team PagerDuty and Slack
+  - name: security-team
+    pagerduty_configs:
+      - service_key: SECURITY_PAGERDUTY_KEY
+        description: 'Security Incident: {{ .CommonAnnotations.description }}'
+        severity: 'critical'
+    slack_configs:
+      - channel: '#security-alerts'
+        title: 'Security Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ .CommonAnnotations.description }}'
+
+# Alert inhibition rules
+inhibit_rules:
+  # Inhibit warning alerts when there is a critical alert for the same service
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: ['alertname', 'cluster', 'service']
+
+  # Inhibit warning security incidents when there is a critical security incident
+  - source_match:
+      type: security_incident
+      severity: critical
+    target_match:
+      type: security_incident
+      severity: warning
+    equal: ['alertname', 'service']
+
+# Alert templates
+templates:
+  - name: HighLatencyAlert
+    template: 'High latency detected: {{ $value }}s for {{ $labels.instance }}'
+    severity: warning
+  - name: CriticalErrorRate
+    template: 'Error rate exceeded threshold: {{ $value }}% for {{ $labels.service }}'
+    severity: critical
+  - name: SecurityIncident
+    template: 'Security alert: {{ $labels.alert_type }} detected for {{ $labels.service }}'
+    severity: critical
+  - name: DataAccessAlert
+    template: 'Suspicious data access pattern detected: {{ $labels.pattern_type }} for {{ $labels.service }}'
+    severity: critical
