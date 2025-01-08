@@ -1,0 +1,146 @@
+name: Staging Deployment
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Staging version tag'
+        required: true
+        type: string
+
+concurrency:
+  group: staging
+  cancel-in-progress: true
+
+env:
+  NODE_ENV: staging
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  NODE_VERSION: '18.x'
+  PNPM_VERSION: '8.x'
+
+jobs:
+  validate:
+    name: Validate Staging Prerequisites
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify branch protection
+        run: |
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/${{ github.repository }}/branches/develop/protection
+
+      - name: Validate environment secrets
+        run: |
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ] || [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "Required Vercel secrets are missing"
+            exit 1
+          fi
+
+      - name: Check infrastructure prerequisites
+        run: |
+          curl -s https://staging.tax-optimizer.vercel.app/api/health || exit 1
+
+      - name: Run security scan
+        run: |
+          npx audit-ci --high --critical
+
+  deploy:
+    name: Deploy to Staging
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.tax-optimizer.vercel.app
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_API_URL: https://staging.tax-optimizer.vercel.app/api
+
+      - name: Run database migrations
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+
+      - name: Deploy to Vercel
+        uses: vercel/actions/deploy@v3
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ env.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ env.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./
+        env:
+          VERCEL_ENV: staging
+
+      - name: Run health checks
+        run: |
+          sleep 30  # Wait for deployment propagation
+          curl -f https://staging.tax-optimizer.vercel.app/api/health || exit 1
+
+  post_deployment:
+    name: Post-Deployment Verification
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run smoke tests
+        run: |
+          curl -f https://staging.tax-optimizer.vercel.app/api/health
+          curl -f https://staging.tax-optimizer.vercel.app/api/version
+
+      - name: Verify API endpoints
+        run: |
+          for endpoint in health version auth scenarios calculate; do
+            curl -f https://staging.tax-optimizer.vercel.app/api/$endpoint || exit 1
+          done
+
+      - name: Check monitoring setup
+        run: |
+          curl -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+          https://api.vercel.com/v1/projects/${{ env.VERCEL_PROJECT_ID }}/metrics
+
+      - name: Send deployment notification
+        if: always()
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "text": "Staging Deployment Status: ${{ job.status }}\nEnvironment: staging\nVersion: ${{ github.event.inputs.version || github.sha }}\nURL: https://staging.tax-optimizer.vercel.app"
+          }'
+
+      - name: Update deployment status
+        if: always()
+        run: |
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -X POST \
+          https://api.github.com/repos/${{ github.repository }}/deployments/${{ github.event.deployment.id }}/statuses \
+          -d '{
+            "state": "${{ job.status }}",
+            "environment_url": "https://staging.tax-optimizer.vercel.app",
+            "description": "Staging deployment ${{ job.status }}"
+          }'
