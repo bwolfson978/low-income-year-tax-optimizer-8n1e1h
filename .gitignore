@@ -1,0 +1,118 @@
+# Environment Variables - Security Critical
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+!.env.example
+
+# Dependencies
+node_modules/
+.pnpm-store/
+bower_components/
+
+# Build and Compilation Outputs
+dist/
+build/
+.next/
+out/
+.nuxt/
+.output/
+storybook-static/
+
+# Test and Coverage
+coverage/
+.nyc_output/
+junit.xml
+test-results/
+
+# Cache and Temporary Files
+.cache/
+.temp/
+.tmp/
+.eslintcache
+.stylelintcache
+.prettiercache
+tsconfig.tsbuildinfo
+
+# System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
+
+# IDE and Editor Files
+.idea/
+.vscode/
+*.sublime-*
+.project
+.settings/
+*.swp
+*.swo
+*.swn
+*.bak
+
+# Logs and Debugging
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+debug.log
+
+# Database Files
+*.sqlite
+*.sqlite3
+*.db
+dump.rdb
+
+# Infrastructure and Deployment
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+kubeconfig
+.helm/
+charts/
+
+# Security and Certificates
+*.pem
+*.key
+*.crt
+*.csr
+*.pfx
+*.p12
+id_rsa*
+*.gpg
+*.asc
+
+# Package Manager Files
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+.pnpm-store/
+.npm/
+.yarn/
+
+# Generated Content
+generated/
+*.generated.*
+auto-imports.d.ts
+components.d.ts
+
+# Local Development
+.local/
+*.local
+local.*
+
+# Miscellaneous
+*.bak
+*.swp
+*.swo
+*.swn
+Thumbs.db
+.DS_Store
+desktop.ini
