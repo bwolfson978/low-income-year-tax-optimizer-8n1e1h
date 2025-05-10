@@ -87,7 +87,7 @@ jobs:
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
 
       - name: Deploy to Vercel
-        uses: vercel/actions/deploy@v3
+        uses: vercel/actions/deploy@v5
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ env.VERCEL_ORG_ID }}
